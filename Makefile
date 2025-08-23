@@ -31,9 +31,12 @@ EFI_LIBS	+= -lefi -lgnuefi
 FORMAT		:= -O efi-bsdrv-$(ARCH)
 
 QEBSPIL_OBJS := \
+	src/dtb.o \
 	src/event.o \
 	src/fw.o \
 	src/main.o \
+	src/pil.o \
+	src/pil-types.o \
 	src/scm.o \
 	src/external/cache.o \
 	src/external/libc.o \

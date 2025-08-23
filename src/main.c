@@ -8,31 +8,58 @@
 
 #include "qebspil.h"
 
-static EFI_STATUS pil_load(EFI_FILE_HANDLE root, CHAR16 *path, UINT8 pas_id)
-{
-	EFI_PHYSICAL_ADDRESS metadata;
-	EFI_STATUS status;
-
-	Print(u"Loading %s\n", path);
-
-	status = fw_load(root, path, &metadata);
-	if (EFI_ERROR(status))
-		return status;
-
-	return scm_pil_init(pas_id, metadata);
-}
+EFI_LOADED_IMAGE_PROTOCOL *LoadedImage;
+static EFI_EVENT ebs_event;
 
 static EFI_STATUS efi_late_ebs(void)
 {
-	Print(u"Reached late exit boot services. (Re)Starting PILs!\n");
+	EFI_STATUS status;
 
-	return scm_pil_start(0x1);
+	status = pil_finish_all();
+	if (status == EFI_NOT_FOUND)
+		return EFI_SUCCESS; /* No rempteprocs found */
+	if (!EFI_ERROR(status))
+		return status;
+
+	/*
+	 * Wait a bit to let remoteprocs finish handover.
+	 * FIXME: Wait for the SMP2P signals instead
+	 */
+	return BS->Stall(500 * 1000 * 1000);
+}
+
+static EFI_STATUS efi_dtb_changed(void)
+{
+	EFI_STATUS status;
+	void *dtb;
+
+	/* Free what we prepared last time in case the DTB changed */
+	pil_free_all();
+
+	status = LibGetSystemConfigurationTable(&EfiDtbTableGuid, &dtb);
+	if (status == EFI_NOT_FOUND)
+		return EFI_SUCCESS; /* DTB was removed */
+	if (EFI_ERROR(status))
+		return status;
+
+	status = dtb_enumerate_rprocs(dtb);
+	if (status == EFI_NOT_FOUND)
+		return EFI_SUCCESS; /* No remoteprocs found */
+	if (EFI_ERROR(status))
+		return status;
+
+	/* Register late EBS event (if not already) to start the rprocs later */
+	if (!ebs_event) {
+		status = event_register_late_ebs_callback(&ebs_event, efi_late_ebs);
+		if (EFI_ERROR(status))
+			return status;
+	}
+
+	return EFI_SUCCESS;
 }
 
 EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *system_table)
 {
-	EFI_LOADED_IMAGE_PROTOCOL *loaded_image;
-	EFI_FILE_HANDLE root;
 	EFI_STATUS status;
 	EFI_EVENT event;
 
@@ -40,7 +67,7 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *system_table)
 
 	Print(u"Hello World!\n");
 
-	status = BS->HandleProtocol(image, &LoadedImageProtocol, (VOID**)&loaded_image);
+	status = BS->HandleProtocol(image, &LoadedImageProtocol, (VOID**)&LoadedImage);
 	if (EFI_ERROR(status))
 		return status;
 
@@ -48,16 +75,9 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *system_table)
 	if (EFI_ERROR(status))
 		return status;
 
-	root = LibOpenRoot(loaded_image->DeviceHandle);
-	if (!root) {
-		Print(u"Failed to open root volume. Not started from file?\n");
-		return EFI_NOT_FOUND;
-	}
-
-	status = pil_load(root, u"qcadsp8280.mbn", 0x1);
+	status = event_register_group_callback(&EfiDtbTableGuid, &event, efi_dtb_changed);
 	if (EFI_ERROR(status))
 		return status;
 
-	root->Close(root);
-	return event_register_late_ebs_callback(&event, efi_late_ebs);
+	return efi_dtb_changed();
 }

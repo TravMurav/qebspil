@@ -38,8 +38,19 @@ EFI_STATUS scm_pil_init(UINT8 pas_id, EFI_PHYSICAL_ADDRESS metadata)
 	};
 	UINT64 Results[SCM_MAX_NUM_RESULTS];
 
-	Print(u"Initializing PIL 0x%x\n", pas_id);
 	return scm->ScmSipSysCall(scm, TZ_PIL_INIT_ID, TZ_PIL_INIT_ID_PARAM_ID, Parameters, Results);
+}
+
+EFI_STATUS scm_pil_mem_setup(UINT8 pas_id, EFI_PHYSICAL_ADDRESS addr, UINTN size)
+{
+	UINT64 Parameters[SCM_MAX_NUM_PARAMETERS] = {
+		pas_id,
+		addr,
+		size,
+	};
+	UINT64 Results[SCM_MAX_NUM_RESULTS];
+
+	return scm->ScmSipSysCall(scm, TZ_PIL_MEM_ID, TZ_PIL_MEM_ID_PARAM_ID, Parameters, Results);
 }
 
 EFI_STATUS scm_pil_start(UINT8 pas_id)
@@ -49,7 +60,6 @@ EFI_STATUS scm_pil_start(UINT8 pas_id)
 	};
 	UINT64 Results[SCM_MAX_NUM_RESULTS];
 
-	Print(u"Starting PIL 0x%x\n", pas_id);
 	return scm->ScmSipSysCall(scm, TZ_PIL_AUTH_RESET_ID, TZ_PIL_AUTH_RESET_ID_PARAM_ID, Parameters, Results);
 }
 
@@ -60,6 +70,5 @@ EFI_STATUS scm_pil_stop(UINT8 pas_id)
 	};
 	UINT64 Results[SCM_MAX_NUM_RESULTS];
 
-	Print(u"Stopping PIL 0x%x\n", pas_id);
 	return scm->ScmSipSysCall(scm, TZ_PIL_UNLOCK_XPU_ID, TZ_PIL_UNLOCK_XPU_ID_PARAM_ID, Parameters, Results);
 }
