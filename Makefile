@@ -37,6 +37,7 @@ QEBSPIL_OBJS := \
 	src/scm.o \
 	src/external/cache.o \
 	src/external/libc.o \
+	src/external/lkfdt.o \
 
 .PHONY: all
 all: $(OUTDIR)/qebspilaa64.efi
