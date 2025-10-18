@@ -30,6 +30,9 @@ EFI_LIBS	+= -lefi -lgnuefi
 
 FORMAT		:= -O efi-bsdrv-$(ARCH)
 
+QEBSPIL_ALWAYS_START	?= 0
+EFI_CFLAGS		+= -DQEBSPIL_ALWAYS_START=$(QEBSPIL_ALWAYS_START)
+
 QEBSPIL_OBJS := \
 	src/dtb.o \
 	src/event.o \

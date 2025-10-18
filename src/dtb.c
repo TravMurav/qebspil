@@ -140,6 +140,9 @@ EFI_STATUS dtb_enumerate_rprocs(const void *dtb)
 		if (!lkfdt_node_is_available(dtb, node))
 			continue;
 
+		if (!QEBSPIL_ALWAYS_START && !fdt_getprop(dtb, node, "qcom,broken-reset", NULL))
+			continue;
+
 		type = dtb_find_pil_type(dtb, node);
 		if (!type)
 			continue;
