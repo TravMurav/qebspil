@@ -20,6 +20,7 @@ struct pil_id {
 struct pil_type {
 	const char *compatible;
 	struct pil_id id[PIL_COMPONENTS];
+	EFI_GUID proxy_guid;
 };
 
 struct pil_fw {

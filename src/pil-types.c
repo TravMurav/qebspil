@@ -3,13 +3,7 @@
 #include <string.h>
 
 #include "qebspil.h"
-
-/*
- * FIXME: Additional PIL types (other than ADSP) work sometimes, but are often
- * unstable when started all at the same time. This is probably because we
- * don't implement the RPMh driver necessary for the proxy votes (power domains
- * and interconnect) yet. More work is needed to enable these.
- */
+#include "external/pil-proxy-protocol.h"
 
 static const struct pil_type pil_types[] = {
 	{
@@ -20,21 +14,23 @@ static const struct pil_type pil_types[] = {
 	{
 		.compatible = "qcom,sc8280xp-adsp-pas",
 		.id[PIL_MAIN].full = 1,
+		.proxy_guid = PIL_PROXY_ADSP_GUID,
 	},
-	/* FIXME:
 	{
 		.compatible = "qcom,sc8280xp-slpi-pas",
 		.id[PIL_MAIN].full = 12,
+		.proxy_guid = PIL_PROXY_SLPI_GUID,
 	},
 	{
 		.compatible = "qcom,sc8280xp-nsp0-pas",
 		.id[PIL_MAIN].full = 18,
+		.proxy_guid = PIL_PROXY_CDSP_GUID,
 	},
 	{
 		.compatible = "qcom,sc8280xp-nsp1-pas",
 		.id[PIL_MAIN].full = 30,
+		.proxy_guid = PIL_PROXY_CDSP1_GUID,
 	},
-	*/
 
 	{
 		.compatible = "qcom,x1e80100-adsp-pas",
@@ -46,14 +42,14 @@ static const struct pil_type pil_types[] = {
 			.full = 36,
 			.lite = 41,
 		},
+		.proxy_guid = PIL_PROXY_ADSP_DTB_GUID,
 	},
-	/* FIXME:
 	{
 		.compatible = "qcom,x1e80100-cdsp-pas",
 		.id[PIL_MAIN].full = 18,
 		.id[PIL_DTB].full = 37,
+		.proxy_guid = PIL_PROXY_CDSP_DTB_GUID,
 	},
-	*/
 };
 
 const struct pil_type *pil_types_find(const char *compatible)

@@ -19,11 +19,6 @@ UEFI boot flow. Possible use cases include (for example):
 - Qualcomm Snapdragon 8cx Gen 3 Compute Platform (SC8280XP)
 - Qualcomm Snapdragon X Elite (X1E)
 
-**Currently, only booting the full audio DSP (ADSP) firmware is supported.**
-Booting the DSP may fail due to the lack of a RPMh driver in qebspil, which
-is needed to ensure stable DSP startup. Improving reliability and adding
-support for other DSPs such as the compute DSP (CDSP) is work-in-progress.
-
 ## Build
 1. Make sure you have the `aarch64-linux-gnu-gcc` cross compiler installed.
    (If you want to build natively, omit `CROSS_COMPILE=` in the `make` command).

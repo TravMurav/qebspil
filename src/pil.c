@@ -7,6 +7,7 @@
 #include <efilib.h>
 
 #include "qebspil.h"
+#include "external/pil-proxy-protocol.h"
 
 #define MAX_PIL_NUM		4	/* SC8280XP */
 
@@ -33,9 +34,25 @@ struct pil *pil_alloc(const struct pil_type *type)
 	return NULL;
 }
 
+EFI_STATUS pil_proxy_vote(const EFI_GUID *guid)
+{
+	PIL_PROXY_PROTOCOL *proxy;
+	EFI_STATUS status;
+
+	if (!guid)
+		return EFI_INVALID_PARAMETER;
+
+	status = LibLocateProtocol((EFI_GUID*)guid, (VOID**)&proxy);
+	if (EFI_ERROR(status))
+		return status;
+
+	return proxy->Vote(PIL_PROXY_MODE_VOTE);
+}
 
 EFI_STATUS pil_prepare(struct pil *pil)
 {
+	EFI_STATUS status;
+
 	/* Make sure firmware was loaded for all components */
 	for (enum pil_component c = 0; c < PIL_COMPONENTS; c++) {
 		if (!pil_has_component(pil, c))
@@ -48,6 +65,23 @@ EFI_STATUS pil_prepare(struct pil *pil)
 		 * TODO: Perhaps we should parse the EFI memory map and ensure
 		 * that the memory regions are reserved?
 		 */
+	}
+
+	/*
+	 * Ideally we'd make this vote right before we boot the remoteproc and
+	 * drop it right after. Unfortunately since we run in EBS, the driver
+	 * that provides us with the convenient proxy vote protocol will likely
+	 * be shutting down so we can't really rely on it being available then.
+	 *
+	 * Thus we just vote early and hope the OS will drop the vote later.
+	 */
+	if (!IsZeroGuid(&pil->type->proxy_guid)) {
+		status = pil_proxy_vote(&pil->type->proxy_guid);
+		if (EFI_ERROR(status)) {
+			Print(u"qebspil: Proxy vote failed for %a: %r\n",
+			      pil->type->compatible, status);
+			return status;
+		}
 	}
 
 	/*
